@@ -24,6 +24,7 @@ public class TestConfig {
                 System.out.println(config.getConfig());
             }else{
                 System.out.println("节点不存在！");
+                zk.getData("/APPConf",confWatcher,confWatcher,"");
             }
             TimeUnit.SECONDS.sleep(1);
         }
