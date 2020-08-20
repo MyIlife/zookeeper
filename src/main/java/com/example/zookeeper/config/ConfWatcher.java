@@ -7,6 +7,7 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * 事件监听、异步结果回调
@@ -15,9 +16,18 @@ public class ConfWatcher implements Watcher, AsyncCallback.DataCallback,AsyncCal
     ZooKeeper zk;
     Config config;
     CountDownLatch countDownLatch = new CountDownLatch(1);
+    Thread main;
+
+    /**
+     * 等待节点的创建
+     * exists会开启一个线程监听，一旦节点被创建的话触发节点创建事件，进而触发异步获取节点事件
+     * @throws InterruptedException
+     */
     public void aWait() throws InterruptedException {
         zk.exists("/APPConf", this, this, "");
-        countDownLatch.await();
+        //countDownLatch.await();
+        main = Thread.currentThread();
+        LockSupport.park();
     }
     @Override
     public void process(WatchedEvent event) {
@@ -42,7 +52,8 @@ public class ConfWatcher implements Watcher, AsyncCallback.DataCallback,AsyncCal
     public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat) {
       if(data!=null){
           config.setConfig(new String(data));
-          countDownLatch.countDown();
+          //countDownLatch.countDown();
+          LockSupport.unpark(main);
       }
     }
 
